@@ -2,8 +2,6 @@
 """
     tests/conftest.py
 
-    :copyright: (C) 2015 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 import os
 import time
@@ -52,7 +50,7 @@ def transaction(request):
     with Transaction().start(DB_NAME, USER, context=CONTEXT) as transaction:
         yield transaction
 
-        transaction.cursor.rollback()
+        transaction.rollback()
 
 
 @pytest.fixture(scope='session')
@@ -119,9 +117,10 @@ def test_dataset(request):
         FiscalYear.create_period([fiscal_year])
 
         # Create minimal chart of account
-        account_template, = AccountTemplate.search(
-            [('parent', '=', None)]
-        )
+        account_template, = AccountTemplate.search([
+            ('parent', '=', None),
+            ('name', '=', 'Minimal Account Chart'),
+        ])
 
         session_id, _, _ = account_create_chart.create()
         create_chart = account_create_chart(session_id)
@@ -142,4 +141,4 @@ def test_dataset(request):
         create_chart.properties.account_payable = payable
         create_chart.transition_create_properties()
 
-        transaction.cursor.commit()
+        transaction.commit()

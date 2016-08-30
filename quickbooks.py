@@ -2,8 +2,6 @@
 """
     Quickbooks
 
-    :copyright: (c) 2015 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 import csv
 import tempfile
@@ -11,7 +9,7 @@ from decimal import Decimal
 from dateutil import parser
 
 from trytond.pool import Pool
-from trytond.model import ModelSQL, ModelView, fields
+from trytond.model import ModelSQL, ModelView, fields, Unique
 from trytond.wizard import Wizard, Button, StateAction, StateView
 
 __all__ = ['PayrollAccount']
@@ -30,12 +28,13 @@ class PayrollAccount(ModelSQL, ModelView):
     @classmethod
     def __setup__(cls):
         super(PayrollAccount, cls).__setup__()
+        table = cls.__table__()
         cls._error_messages.update({
             'party_required': 'Party must be required on account'
         })
         cls._sql_constraints = [(
             'payroll_item_uniq',
-            'UNIQUE(payroll_item)',
+            Unique(table, table.payroll_item),
             'Payroll Item must be unique per project'
         )]
 
@@ -166,7 +165,7 @@ class ImportPayrollItem(Wizard):
                 debit = abs(Decimal(row['Amount']))
 
             if row['Source Name']:
-                move.lines.append(MoveLine(
+                move.lines += (MoveLine(
                     account=self.get_quickbook_payroll_account(
                         row['Payroll Item']
                     ),
@@ -175,14 +174,14 @@ class ImportPayrollItem(Wizard):
                     party=self.get_quickbook_source_name(
                         row['Source Name']
                     )
-                ))
+                ), )
             else:
                 # This is an effective balance line.
-                move.lines.append(MoveLine(
+                move.lines += (MoveLine(
                     account=self.start.credit_account,
                     debit=debit,
                     credit=credit,
-                ))
+                ), )
 
         move.save()
 
